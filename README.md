@@ -5,6 +5,7 @@
 
 ## 🎯 Vision
 Inspirierende Ideen vor dem Vergessen bewahren und den Nutzer auf spielerische Weise zur Umsetzung seiner persönlichen Ziele motivieren.
+**Die Vision kann ebenfalls unter den Product Vision Boards [Product Vision Board 1](https://github.com/CSpeedzDev/acp-dream-deck/wiki/Product-Vision-Board-(Initial)) und [Product Vision Board 2](https://github.com/CSpeedzDev/acp-dream-deck/wiki/Product-Vision-Board-(Revised)) eingesehen werden**
 
 ## 👤 Persona
 **Lea (22, Studentin):** Kreativ aber chaotisch. Sucht Inspiration statt noch einer To-Do-Liste.
@@ -16,3 +17,6 @@ Inspirierende Ideen vor dem Vergessen bewahren und den Nutzer auf spielerische W
 
 ## 📂 Dokumentation
 Detaillierte Anforderungen, Personas und das Product Vision Board finden sich im [Project Wiki](https://github.com/CSpeedzDev/acp-dream-deck/wiki).
+
+## 📂 Dokumentation
+Die  Anforderungen, Personas und das Product Vision Board finden sich im [Project Wiki](https://github.com/CSpeedzDev/acp-dream-deck/wiki).
