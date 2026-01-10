@@ -15,4 +15,4 @@ Inspirierende Ideen vor dem Vergessen bewahren und den Nutzer auf spielerische W
 *   **Methodik:** Agile Co-Creation (40h Timebox - Aufgeteilt in zwei Inkrementen (1. Inkrement: 10h; 2. Inkrement 30h)
 
 ## 📂 Dokumentation
-Detaillierte Anforderungen, Personas und das Product Vision Board finden sich im [Project Wiki]((https://github.com/CSpeedzDev/acp-dream-deck.wiki.git)).
+Detaillierte Anforderungen, Personas und das Product Vision Board finden sich im [Project Wiki](https://github.com/CSpeedzDev/acp-dream-deck.wiki.git).
