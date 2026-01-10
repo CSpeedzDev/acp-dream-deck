@@ -17,6 +17,3 @@ Inspirierende Ideen vor dem Vergessen bewahren und den Nutzer auf spielerische W
 
 ## 📂 Dokumentation
 Detaillierte Anforderungen, Personas und das Product Vision Board finden sich im [Project Wiki](https://github.com/CSpeedzDev/acp-dream-deck/wiki).
-
-## 📂 Dokumentation
-Die  Anforderungen, Personas und das Product Vision Board finden sich im [Project Wiki](https://github.com/CSpeedzDev/acp-dream-deck/wiki).
