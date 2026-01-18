@@ -18,7 +18,7 @@ Das mit Lovable erstellte Mockup wurde gezielt eingesetzt, um:
 - Design- und Interaktion mit der App zu prüfen  
 - eine konsistente Grundlage für die Umsetzung mit Flutter zu schaffen
 
-**Das App-Mockup kann über dem Link [](https://acp-dream-deck.lovable.app/) oder im [Projekt-Wiki](https://github.com/CSpeedzDev/acp-dream-deck/wiki/App-Mockup) eingesehen werden**
+**Das App-Mockup kann über dem Link [https://acp-dream-deck.lovable.app/](https://acp-dream-deck.lovable.app/) oder im [Projekt-Wiki](https://github.com/CSpeedzDev/acp-dream-deck/wiki/App-Mockup) eingesehen werden**
 
 ## 👥 Personas
 Wir entwickeln für zwei primäre Archetypen:
