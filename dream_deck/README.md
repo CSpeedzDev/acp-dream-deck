@@ -16,21 +16,35 @@ A minimalist mobile app that stores personal aspirations (bucket list items) and
 ### 🎯 Core Features (All User Stories)
 
 ✅ **Quick Idea Capture (<5 seconds)**
-- Floating + button on home screen
+- Floating + button with gradient styling
 - Simple form with title (required), notes, and first step (optional)
 - Category selection with 5 options
+- Button disabled until title is entered
 - Local storage with Hive
 
 ✅ **Shuffle Mechanism**
 - Random dream display with beautiful gradient cards
-- Prominent shuffle button
+- Animated spinning shuffle button
+- "Shuffling..." text during animation
 - Empty state guidance
+
+✅ **Dream Detail View**
+- Tap any card to see full details
+- Displays category, title, first step, and notes
+- "Mark as Done" button with hover effect
+- "Back to Shuffle" button with hover effect
+- Clean, organized layout
 
 ✅ **Swipe Interactions**
 - Swipe Left: Snooze for 24 hours ("Not now")
-- Swipe Right/Tap: Mark as completed ("Let's do this!")
+- Swipe Right: Mark as completed ("Let's do this!")
 - Smooth animations with visual feedback
 - 24-hour cooldown prevents pressure
+
+✅ **iOS-Style Navigation**
+- Sliding toggle animation between views
+- Gradient background follows active tab
+- Smooth 300ms transitions
 
 ✅ **Category System**
 - 🌿 Outdoor
@@ -121,11 +135,23 @@ flutter run
 
 1. **Add a Dream**: Tap the + button, enter your idea, optionally add a category and first step
 2. **Shuffle**: Press the shuffle button to discover a random dream
-3. **Interact**: 
+3. **View Details**: Tap on a dream card to see full details
+4. **Interact**: 
    - Swipe left to snooze for 24 hours
-   - Swipe right or tap to mark as completed
-4. **View Memories**: Check the Memories tab to see completed dreams
-5. **Reactivate**: Tap the replay icon to make a dream active again
+   - Swipe right to mark as completed
+   - Or use the detail view buttons
+5. **View Memories**: Check the Memories tab to see completed dreams
+6. **Reactivate**: Tap the replay icon to make a dream active again
+
+### 💾 Data Persistence
+
+**Mobile/Desktop**: Data is permanently stored locally using Hive database.
+
+**Web**: Data is stored in browser IndexedDB. Note that:
+- Data persists across page refreshes in the same browser
+- Clearing browser data will reset the app
+- Different browsers/private modes have separate storage
+- This is expected behavior for web apps using local storage
 
 ## 🎯 User Stories Completed
 

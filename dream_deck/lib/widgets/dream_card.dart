@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/dream.dart';
+import '../screens/dream_detail_screen.dart';
 
 class DreamCard extends StatefulWidget {
   final Dream dream;
@@ -21,6 +22,26 @@ class _DreamCardState extends State<DreamCard>
     with SingleTickerProviderStateMixin {
   double _dragOffset = 0;
   bool _isDragging = false;
+  late AnimationController _hueController;
+  late Animation<double> _hueAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _hueController = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    )..repeat(reverse: true);
+    _hueAnimation = Tween<double>(begin: -0.05, end: 0.05).animate(
+      CurvedAnimation(parent: _hueController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _hueController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,6 +49,14 @@ class _DreamCardState extends State<DreamCard>
     final isSwipingLeft = _dragOffset < 0;
 
     return GestureDetector(
+      onTap: () {
+        // Open detail screen when tapped
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => DreamDetailScreen(dream: widget.dream),
+          ),
+        );
+      },
       onHorizontalDragStart: (_) {
         setState(() {
           _isDragging = true;
@@ -86,110 +115,148 @@ class _DreamCardState extends State<DreamCard>
   }
 
   Widget _buildCard() {
-    return Card(
-      elevation: 8,
-      child: Container(
-        width: double.infinity,
-        constraints: const BoxConstraints(minHeight: 400),
-        padding: const EdgeInsets.all(32),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              widget.dream.category.color.withValues(alpha: 0.8),
-              widget.dream.category.color,
-            ],
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Category badge
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(20),
+    return AnimatedBuilder(
+      animation: _hueAnimation,
+      builder: (context, child) {
+        final baseColor = widget.dream.category.color;
+        final hslColor = HSLColor.fromColor(baseColor);
+        final animatedColor = hslColor
+            .withHue((hslColor.hue + _hueAnimation.value * 20) % 360)
+            .toColor();
+
+        return Card(
+          elevation: 8,
+          child: Container(
+            width: double.infinity,
+            constraints: const BoxConstraints(minHeight: 400),
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  animatedColor.withValues(alpha: 0.9),
+                  baseColor.withValues(alpha: 0.95),
+                  baseColor,
+                ],
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    widget.dream.category.emoji,
-                    style: const TextStyle(fontSize: 16),
+              boxShadow: [
+                BoxShadow(
+                  color: animatedColor.withValues(alpha: 0.4),
+                  blurRadius: 16,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Category badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    widget.dream.category.displayName,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        widget.dream.category.emoji,
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        widget.dream.category.displayName,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 32),
+                // Dream title
+                Text(
+                  widget.dream.title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    height: 1.3,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // First step section
+                if (widget.dream.firstStep != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'START WITH:',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          widget.dream.firstStep!,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
-              ),
-            ),
-            const SizedBox(height: 32),
-            // Dream title
-            Text(
-              widget.dream.title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                height: 1.3,
-              ),
-            ),
-            const SizedBox(height: 24),
-            // First step section
-            if (widget.dream.firstStep != null) ...[
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                const Spacer(),
+                // Swipe hints
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'START WITH:',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2,
+                    _buildSwipeHint('← Not now', Colors.white.withValues(alpha: 0.7)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: const Text(
+                        'Tap to see details',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      widget.dream.firstStep!,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        height: 1.4,
-                      ),
-                    ),
+                    _buildSwipeHint('Let\'s do this! →', Colors.white.withValues(alpha: 0.7)),
                   ],
                 ),
-              ),
-            ],
-            const Spacer(),
-            // Swipe hints
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildSwipeHint('← Not now', Colors.white.withValues(alpha: 0.7)),
-                _buildSwipeHint('Let\'s do this! →', Colors.white.withValues(alpha: 0.7)),
               ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 

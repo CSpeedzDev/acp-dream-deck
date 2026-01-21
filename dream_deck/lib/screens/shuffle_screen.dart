@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:math' as math;
 import '../providers/dream_provider.dart';
 import '../models/dream.dart';
 import '../theme/app_theme.dart';
@@ -12,14 +13,29 @@ class ShuffleScreen extends StatefulWidget {
   State<ShuffleScreen> createState() => _ShuffleScreenState();
 }
 
-class _ShuffleScreenState extends State<ShuffleScreen> {
+class _ShuffleScreenState extends State<ShuffleScreen> with SingleTickerProviderStateMixin {
   Dream? _currentDream;
-  bool _isLoading = false;
+  bool _isShuffling = false;
+  late AnimationController _spinController;
+  late Animation<double> _spinAnimation;
 
   @override
   void initState() {
     super.initState();
+    _spinController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _spinAnimation = Tween<double>(begin: 0, end: 2 * math.pi).animate(
+      CurvedAnimation(parent: _spinController, curve: Curves.easeInOut),
+    );
     _loadRandomDream();
+  }
+
+  @override
+  void dispose() {
+    _spinController.dispose();
+    super.dispose();
   }
 
   void _loadRandomDream() {
@@ -30,15 +46,23 @@ class _ShuffleScreenState extends State<ShuffleScreen> {
   }
 
   void _shuffleDream() async {
+    if (_isShuffling) return;
+
     setState(() {
-      _isLoading = true;
+      _isShuffling = true;
     });
 
-    await Future.delayed(const Duration(milliseconds: 300));
+    _spinController.forward(from: 0);
+    await Future.delayed(const Duration(milliseconds: 600));
 
     setState(() {
       _loadRandomDream();
-      _isLoading = false;
+    });
+
+    await Future.delayed(const Duration(milliseconds: 200));
+
+    setState(() {
+      _isShuffling = false;
     });
   }
 
@@ -69,69 +93,131 @@ class _ShuffleScreenState extends State<ShuffleScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Column(
-          children: [
-            Text(
-              'DreamDeck',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.primaryPurple,
-              ),
+    return Consumer<DreamProvider>(
+      builder: (context, provider, child) {
+        final activeDreamsCount = provider.activeDreams.length;
+        final canShuffle = activeDreamsCount >= 2;
+        final hasAnyDreams = activeDreamsCount > 0;
+
+        return Scaffold(
+          appBar: AppBar(
+            title: Column(
+              children: [
+                ShaderMask(
+                  shaderCallback: (bounds) => LinearGradient(
+                    colors: [
+                      AppTheme.primaryPurple,
+                      AppTheme.primaryPink,
+                      Colors.orange.shade400,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ).createShader(bounds),
+                  child: const Text(
+                    'DreamDeck',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                const Text(
+                  'Shuffle your dreams ✨',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.normal,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
             ),
-            Text(
-              'Shuffle your dreams ✨',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.normal,
-                color: AppTheme.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            children: [
-              Expanded(
-                child: Center(
-                  child: _isLoading
-                      ? const CircularProgressIndicator()
-                      : _currentDream == null
-                          ? _buildEmptyState()
+          ),
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: Center(
+                      child: _currentDream == null
+                          ? _buildEmptyState(hasAnyDreams)
                           : DreamCard(
                               dream: _currentDream!,
                               onSwipeLeft: _onSwipeLeft,
                               onSwipeRight: _onSwipeRight,
                             ),
-                ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  if (hasAnyDreams && canShuffle)
+                    AnimatedBuilder(
+                      animation: _spinAnimation,
+                      builder: (context, child) {
+                        return Container(
+                          width: double.infinity,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [AppTheme.primaryPurple, AppTheme.primaryPink],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(30),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.primaryPurple.withValues(alpha: 0.4),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: _isShuffling ? null : _shuffleDream,
+                              borderRadius: BorderRadius.circular(30),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Transform.rotate(
+                                      angle: _spinAnimation.value,
+                                      child: const Icon(
+                                        Icons.shuffle,
+                                        size: 24,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      _isShuffling ? 'Shuffling...' : 'Shuffle!',
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  if (hasAnyDreams && canShuffle) const SizedBox(height: 16),
+                ],
               ),
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: _shuffleDream,
-                icon: const Icon(Icons.shuffle, size: 24),
-                label: const Text(
-                  'Shuffle!',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 20),
-                  minimumSize: const Size(double.infinity, 60),
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(bool hasAnyDreams) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -139,20 +225,26 @@ class _ShuffleScreenState extends State<ShuffleScreen> {
           width: 120,
           height: 120,
           decoration: BoxDecoration(
-            color: AppTheme.primaryPurple.withValues(alpha: 0.1),
+            color: hasAnyDreams 
+                ? AppTheme.primaryPurple.withValues(alpha: 0.1)
+                : Colors.grey.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
-          child: const Icon(
+          child: Icon(
             Icons.auto_awesome,
             size: 60,
-            color: AppTheme.primaryPurple,
+            color: hasAnyDreams 
+                ? AppTheme.primaryPurple 
+                : Colors.grey.shade400,
           ),
         ),
         const SizedBox(height: 24),
-        const Text(
-          'Tap shuffle to discover\nyour next adventure!',
+        Text(
+          hasAnyDreams 
+              ? 'Tap shuffle to discover\nyour next adventure!'
+              : 'No ideas yet!',
           textAlign: TextAlign.center,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 18,
             color: AppTheme.textSecondary,
             height: 1.5,
@@ -160,7 +252,9 @@ class _ShuffleScreenState extends State<ShuffleScreen> {
         ),
         const SizedBox(height: 16),
         Text(
-          'No dreams yet? Tap + to add one!',
+          hasAnyDreams
+              ? 'Add more dreams to shuffle!'
+              : 'Add some dreams to get started.',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 14,

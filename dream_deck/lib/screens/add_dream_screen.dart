@@ -5,6 +5,7 @@ import '../providers/dream_provider.dart';
 import '../models/dream.dart';
 import '../models/dream_category.dart';
 import '../theme/app_theme.dart';
+import 'idea_created_screen.dart';
 
 class AddDreamScreen extends StatefulWidget {
   const AddDreamScreen({super.key});
@@ -19,6 +20,19 @@ class _AddDreamScreenState extends State<AddDreamScreen> {
   final _notesController = TextEditingController();
   final _firstStepController = TextEditingController();
   DreamCategory _selectedCategory = DreamCategory.quickWin;
+  bool _isButtonEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController.addListener(_updateButtonState);
+  }
+
+  void _updateButtonState() {
+    setState(() {
+      _isButtonEnabled = _titleController.text.trim().isNotEmpty;
+    });
+  }
 
   @override
   void dispose() {
@@ -47,14 +61,23 @@ class _AddDreamScreenState extends State<AddDreamScreen> {
       await Provider.of<DreamProvider>(context, listen: false).addDream(dream);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✨ Idea captured!'),
-            duration: Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
+        // Pop the add dream screen first
+        Navigator.pop(context);
+        
+        // Show the success screen
+        await Navigator.of(context).push(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const IdeaCreatedScreen(),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: animation,
+                child: child,
+              );
+            },
+            transitionDuration: const Duration(milliseconds: 300),
           ),
         );
-        Navigator.pop(context);
       }
     }
   }
@@ -64,9 +87,23 @@ class _AddDreamScreenState extends State<AddDreamScreen> {
     return Scaffold(
       backgroundColor: AppTheme.lightBackground,
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: Material(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(12),
+              child: InkWell(
+                onTap: () => Navigator.pop(context),
+                borderRadius: BorderRadius.circular(12),
+                hoverColor: Colors.grey.shade400,
+                child: const Center(
+                  child: Icon(Icons.arrow_back, size: 24),
+                ),
+              ),
+            ),
+          ),
         ),
         title: const Text(
           'Capture an Idea',
@@ -96,8 +133,11 @@ class _AddDreamScreenState extends State<AddDreamScreen> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _titleController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     hintText: 'e.g., Learn to play guitar',
+                    hintStyle: TextStyle(
+                      color: AppTheme.textSecondary.withValues(alpha: 0.4),
+                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -121,8 +161,11 @@ class _AddDreamScreenState extends State<AddDreamScreen> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _notesController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     hintText: 'Extra context, inspiration, links...',
+                    hintStyle: TextStyle(
+                      color: AppTheme.textSecondary.withValues(alpha: 0.4),
+                    ),
                   ),
                   maxLines: 3,
                   textCapitalization: TextCapitalization.sentences,
@@ -150,8 +193,11 @@ class _AddDreamScreenState extends State<AddDreamScreen> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _firstStepController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     hintText: 'e.g., Watch a 10-min tutorial',
+                    hintStyle: TextStyle(
+                      color: AppTheme.textSecondary.withValues(alpha: 0.4),
+                    ),
                   ),
                   textCapitalization: TextCapitalization.sentences,
                 ),
@@ -224,18 +270,55 @@ class _AddDreamScreenState extends State<AddDreamScreen> {
                 // Save button
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _saveDream,
-                    icon: const Icon(Icons.auto_awesome, size: 24),
-                    label: const Text(
-                      'Capture Idea!',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  height: 60,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: _isButtonEnabled
+                          ? const LinearGradient(
+                              colors: [AppTheme.primaryPurple, AppTheme.primaryPink],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            )
+                          : null,
+                      color: _isButtonEnabled ? null : Colors.grey.shade400,
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: _isButtonEnabled
+                          ? [
+                              BoxShadow(
+                                color: AppTheme.primaryPurple.withValues(alpha: 0.4),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ]
+                          : null,
                     ),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _isButtonEnabled ? _saveDream : null,
+                        borderRadius: BorderRadius.circular(30),
+                        child: Center(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.auto_awesome,
+                                size: 24,
+                                color: _isButtonEnabled ? Colors.white : Colors.grey.shade600,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Capture Idea!',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: _isButtonEnabled ? Colors.white : Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),

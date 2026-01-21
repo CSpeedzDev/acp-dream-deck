@@ -32,9 +32,36 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _screens[_currentIndex],
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddDreamScreen,
-        child: const Icon(Icons.add, size: 32),
+      floatingActionButton: Container(
+        width: 64,
+        height: 64,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [AppTheme.primaryPurple, AppTheme.primaryPink],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(32),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primaryPurple.withValues(alpha: 0.4),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: _showAddDreamScreen,
+            borderRadius: BorderRadius.circular(32),
+            child: const Icon(
+              Icons.add,
+              size: 32,
+              color: Colors.white,
+            ),
+          ),
+        ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: Container(
@@ -51,22 +78,63 @@ class _HomeScreenState extends State<HomeScreen> {
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildNavButton(
-                  icon: Icons.shuffle,
-                  label: 'Shuffle',
-                  isActive: _currentIndex == 0,
-                  onTap: () => setState(() => _currentIndex = 0),
-                ),
-                _buildNavButton(
-                  icon: Icons.favorite,
-                  label: 'Memories',
-                  isActive: _currentIndex == 1,
-                  onTap: () => setState(() => _currentIndex = 1),
-                ),
-              ],
+            child: Container(
+              height: 56,
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(28),
+              ),
+              child: Stack(
+                children: [
+                  AnimatedAlign(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    alignment: _currentIndex == 0 ? Alignment.centerLeft : Alignment.centerRight,
+                    child: FractionallySizedBox(
+                      widthFactor: 0.5,
+                      heightFactor: 1.0,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [AppTheme.primaryPurple, AppTheme.primaryPink],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.primaryPurple.withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildNavButton(
+                          icon: Icons.shuffle,
+                          label: 'Shuffle',
+                          isActive: _currentIndex == 0,
+                          onTap: () => setState(() => _currentIndex = 0),
+                        ),
+                      ),
+                      Expanded(
+                        child: _buildNavButton(
+                          icon: Icons.favorite,
+                          label: 'Memories',
+                          isActive: _currentIndex == 1,
+                          onTap: () => setState(() => _currentIndex = 1),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -80,34 +148,28 @@ class _HomeScreenState extends State<HomeScreen> {
     required bool isActive,
     required VoidCallback onTap,
   }) {
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(24),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        decoration: BoxDecoration(
-          color: isActive ? AppTheme.primaryPurple : Colors.transparent,
-          borderRadius: BorderRadius.circular(24),
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        color: Colors.transparent,
         child: Row(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               icon,
-              color: isActive ? Colors.white : AppTheme.textSecondary,
-              size: 24,
+              color: isActive ? Colors.white : AppTheme.textPrimary,
+              size: 22,
             ),
-            if (isActive) ...[
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: isActive ? Colors.white : AppTheme.textPrimary,
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+                fontSize: 15,
               ),
-            ],
+            ),
           ],
         ),
       ),
