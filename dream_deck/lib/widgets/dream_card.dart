@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/dream.dart';
+import '../providers/category_provider.dart';
 import '../screens/dream_detail_screen.dart';
 
 class DreamCard extends StatefulWidget {
@@ -19,11 +21,13 @@ class DreamCard extends StatefulWidget {
 }
 
 class _DreamCardState extends State<DreamCard>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   double _dragOffset = 0;
   bool _isDragging = false;
   late AnimationController _hueController;
   late Animation<double> _hueAnimation;
+  late AnimationController _tapController;
+  late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
@@ -35,12 +39,32 @@ class _DreamCardState extends State<DreamCard>
     _hueAnimation = Tween<double>(begin: -0.05, end: 0.05).animate(
       CurvedAnimation(parent: _hueController, curve: Curves.easeInOut),
     );
+    
+    // Tap animation
+    _tapController = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.98).animate(
+      CurvedAnimation(parent: _tapController, curve: Curves.easeOut),
+    );
   }
 
   @override
   void dispose() {
     _hueController.dispose();
+    _tapController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(DreamCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Force rebuild if dream changed
+    if (oldWidget.dream.id != widget.dream.id || 
+        oldWidget.dream.categoryId != widget.dream.categoryId) {
+      setState(() {});
+    }
   }
 
   @override
@@ -49,13 +73,25 @@ class _DreamCardState extends State<DreamCard>
     final isSwipingLeft = _dragOffset < 0;
 
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
+        // Quick press animation
+        _tapController.forward();
+        
+        // Small delay for animation, then navigate
+        await Future.delayed(const Duration(milliseconds: 100));
+        
         // Open detail screen when tapped
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => DreamDetailScreen(dream: widget.dream),
-          ),
-        );
+        if (mounted) {
+          await Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => DreamDetailScreen(dream: widget.dream),
+            ),
+          );
+          // Reset animation when coming back
+          if (mounted) {
+            _tapController.reset();
+          }
+        }
       },
       onHorizontalDragStart: (_) {
         setState(() {
@@ -80,7 +116,12 @@ class _DreamCardState extends State<DreamCard>
           _isDragging = false;
         });
       },
-      child: Transform.translate(
+      child: AnimatedBuilder(
+        animation: _tapController,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _scaleAnimation.value,
+            child: Transform.translate(
         offset: Offset(_dragOffset, 0),
         child: Transform.rotate(
           angle: _dragOffset * 0.001,
@@ -111,14 +152,24 @@ class _DreamCardState extends State<DreamCard>
           ),
         ),
       ),
+          );
+        },
+      ),
     );
   }
 
   Widget _buildCard() {
-    return AnimatedBuilder(
+    return Consumer<CategoryProvider>(
+      builder: (context, categoryProvider, child) {
+        // Get the correct color based on whether it's a custom category
+        final baseColor = widget.dream.categoryId != null
+            ? (categoryProvider.getCategoryById(widget.dream.categoryId!)?.color ??
+                widget.dream.category.color)
+            : widget.dream.category.color;
+        
+        return AnimatedBuilder(
       animation: _hueAnimation,
       builder: (context, child) {
-        final baseColor = widget.dream.category.color;
         final hslColor = HSLColor.fromColor(baseColor);
         final animatedColor = hslColor
             .withHue((hslColor.hue + _hueAnimation.value * 20) % 360)
@@ -154,30 +205,46 @@ class _DreamCardState extends State<DreamCard>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Category badge
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        widget.dream.category.emoji,
-                        style: const TextStyle(fontSize: 16),
+                Consumer<CategoryProvider>(
+                  builder: (context, categoryProvider, child) {
+                    String emoji;
+                    String displayName;
+                    
+                    if (widget.dream.categoryId != null) {
+                      final customCategory = categoryProvider.getCategoryById(widget.dream.categoryId!);
+                      emoji = customCategory?.emoji ?? '✨';
+                      displayName = customCategory?.title ?? 'Unknown';
+                    } else {
+                      emoji = widget.dream.category.emoji;
+                      displayName = widget.dream.category.displayName;
+                    }
+                    
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        widget.dream.category.displayName,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            emoji,
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            displayName,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 32),
                 // Dream title
@@ -257,8 +324,8 @@ class _DreamCardState extends State<DreamCard>
           ),
         );
       },
-    );
-  }
+    );      },
+    );  }
 
   Widget _buildSwipeHint(String text, Color color) {
     return Text(

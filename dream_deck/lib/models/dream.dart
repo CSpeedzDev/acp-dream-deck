@@ -32,6 +32,9 @@ class Dream extends HiveObject {
   @HiveField(8)
   DateTime? snoozedUntil;
 
+  @HiveField(9)
+  String? categoryId; // New field for custom categories
+
   Dream({
     required this.id,
     required this.title,
@@ -42,8 +45,10 @@ class Dream extends HiveObject {
     required this.createdAt,
     this.completedAt,
     this.snoozedUntil,
+    this.categoryId,
   });
 
+  // Legacy support: if categoryId is null, use old enum system
   DreamCategory get category => DreamCategory.values[categoryIndex];
 
   bool get isSnoozed {

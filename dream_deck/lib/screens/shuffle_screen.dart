@@ -5,6 +5,7 @@ import '../providers/dream_provider.dart';
 import '../models/dream.dart';
 import '../theme/app_theme.dart';
 import '../widgets/dream_card.dart';
+import 'action_feedback_screen.dart';
 
 class ShuffleScreen extends StatefulWidget {
   const ShuffleScreen({super.key});
@@ -33,6 +34,20 @@ class _ShuffleScreenState extends State<ShuffleScreen> with SingleTickerProvider
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reload the current dream to reflect any state changes
+    if (_currentDream != null) {
+      final provider = Provider.of<DreamProvider>(context, listen: false);
+      final updatedDream = provider.allDreams.where((d) => d.id == _currentDream!.id).firstOrNull;
+      if (updatedDream != null && (updatedDream.isCompleted || updatedDream.isSnoozed)) {
+        // Current dream is no longer active, load a new one
+        _loadRandomDream();
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _spinController.dispose();
     super.dispose();
@@ -48,12 +63,30 @@ class _ShuffleScreenState extends State<ShuffleScreen> with SingleTickerProvider
   void _shuffleDream() async {
     if (_isShuffling) return;
 
+    final provider = Provider.of<DreamProvider>(context, listen: false);
+    final activeDreams = provider.activeDreams;
+    
+    if (activeDreams.length < 2) return;
+
     setState(() {
       _isShuffling = true;
     });
 
     _spinController.forward(from: 0);
-    await Future.delayed(const Duration(milliseconds: 600));
+
+    // Cycle through cards during shuffle
+    final cycleTimes = activeDreams.length.clamp(2, 5); // Show 2-5 cards max
+    for (int i = 0; i < cycleTimes; i++) {
+      await Future.delayed(Duration(milliseconds: 150 + (i * 50))); // Increasing delay
+      if (mounted) {
+        setState(() {
+          _currentDream = activeDreams[i % activeDreams.length];
+        });
+      }
+    }
+
+    // Final delay before showing the selected card
+    await Future.delayed(const Duration(milliseconds: 200));
 
     setState(() {
       _loadRandomDream();
@@ -68,26 +101,41 @@ class _ShuffleScreenState extends State<ShuffleScreen> with SingleTickerProvider
 
   void _onSwipeLeft(Dream dream) {
     dream.snoozeFor24Hours();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('← Not now! See you in 24 hours'),
-        duration: Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
+    Provider.of<DreamProvider>(context, listen: false).updateDream(dream);
+    
+    // Show animated feedback
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            ActionFeedbackScreen(actionType: ActionType.snoozed),
+        opaque: false,
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
       ),
     );
+    
     _shuffleDream();
   }
 
   void _onSwipeRight(Dream dream) {
     dream.markAsCompleted();
     Provider.of<DreamProvider>(context, listen: false).updateDream(dream);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('🎉 Let\'s do this! Added to Memories'),
-        duration: Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
+    
+    // Show animated feedback
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            ActionFeedbackScreen(actionType: ActionType.completed),
+        opaque: false,
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
       ),
     );
+    
     _shuffleDream();
   }
 
@@ -98,6 +146,28 @@ class _ShuffleScreenState extends State<ShuffleScreen> with SingleTickerProvider
         final activeDreamsCount = provider.activeDreams.length;
         final canShuffle = activeDreamsCount >= 2;
         final hasAnyDreams = activeDreamsCount > 0;
+        
+        // Check if current dream is still active, if not reload
+        if (_currentDream != null) {
+          final isStillActive = provider.activeDreams.any((d) => d.id == _currentDream!.id);
+          if (!isStillActive && hasAnyDreams) {
+            // Current dream is no longer active, schedule reload
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                _loadRandomDream();
+              }
+            });
+          } else if (!hasAnyDreams) {
+            // No more active dreams
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                setState(() {
+                  _currentDream = null;
+                });
+              }
+            });
+          }
+        }
 
         return Scaffold(
           appBar: AppBar(
@@ -143,6 +213,7 @@ class _ShuffleScreenState extends State<ShuffleScreen> with SingleTickerProvider
                       child: _currentDream == null
                           ? _buildEmptyState(hasAnyDreams)
                           : DreamCard(
+                              key: ValueKey(_currentDream!.id),
                               dream: _currentDream!,
                               onSwipeLeft: _onSwipeLeft,
                               onSwipeRight: _onSwipeRight,

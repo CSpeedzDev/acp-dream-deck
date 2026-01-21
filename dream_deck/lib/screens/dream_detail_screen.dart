@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/dream.dart';
 import '../providers/dream_provider.dart';
+import '../providers/category_provider.dart';
 import '../theme/app_theme.dart';
+import 'action_feedback_screen.dart';
 
 class DreamDetailScreen extends StatefulWidget {
   final Dream dream;
@@ -16,17 +18,28 @@ class DreamDetailScreen extends StatefulWidget {
 class _DreamDetailScreenState extends State<DreamDetailScreen> {
   bool _isMarkDoneHovered = false;
   bool _isBackToShuffleHovered = false;
+  bool _isBackButtonHovered = false;
 
   void _markAsDone() {
     widget.dream.markAsCompleted();
-    Provider.of<DreamProvider>(context, listen: false).updateDream(widget.dream);
+    Provider.of<DreamProvider>(
+      context,
+      listen: false,
+    ).updateDream(widget.dream);
+    
+    // Pop the detail screen first
     Navigator.pop(context);
-    Navigator.pop(context); // Go back to shuffle screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('🎉 Let\'s do this! Added to Memories'),
-        duration: Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
+    
+    // Show animated feedback
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            ActionFeedbackScreen(actionType: ActionType.completed),
+        opaque: false,
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
       ),
     );
   }
@@ -37,298 +50,386 @@ class _DreamDetailScreenState extends State<DreamDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final hasFirstStep =
+        widget.dream.firstStep != null && widget.dream.firstStep!.isNotEmpty;
+    final hasNotes =
+        widget.dream.notes != null && widget.dream.notes!.isNotEmpty;
+    final hasAnyOptionalContent = hasFirstStep || hasNotes;
+
     return Scaffold(
       backgroundColor: AppTheme.lightBackground,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         leading: Padding(
           padding: const EdgeInsets.all(8.0),
           child: MouseRegion(
             cursor: SystemMouseCursors.click,
+            onEnter: (_) => setState(() => _isBackButtonHovered = true),
+            onExit: (_) => setState(() => _isBackButtonHovered = false),
             child: Material(
-              color: Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(12),
+              color: Colors.white.withValues(
+                alpha: _isBackButtonHovered ? 0.4 : 0.3,
+              ),
+              borderRadius: BorderRadius.circular(20),
               child: InkWell(
                 onTap: _backToShuffle,
-                borderRadius: BorderRadius.circular(12),
-                hoverColor: Colors.grey.shade400,
+                borderRadius: BorderRadius.circular(20),
                 child: const Center(
-                  child: Icon(Icons.arrow_back, size: 24),
+                  child: Icon(
+                    Icons.arrow_back,
+                    size: 24,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
           ),
         ),
         backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Category badge with icon
-                    Row(
-                      children: [
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: widget.dream.category.color.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Center(
-                            child: Text(
-                              widget.dream.category.emoji,
-                              style: const TextStyle(fontSize: 24),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: widget.dream.category.color.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            widget.dream.category.displayName,
-                            style: TextStyle(
-                              color: widget.dream.category.color,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    // Title with gradient background
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            widget.dream.category.color.withValues(alpha: 0.8),
-                            widget.dream.category.color,
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(20),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Colored header section with category and title
+                  Consumer<CategoryProvider>(
+                    builder: (context, categoryProvider, child) {
+                      final categoryColor = widget.dream.categoryId != null
+                          ? (categoryProvider.getCategoryById(widget.dream.categoryId!)?.color ??
+                              widget.dream.category.color)
+                          : widget.dream.category.color;
+                      
+                      final categoryEmoji = widget.dream.categoryId != null
+                          ? (categoryProvider.getCategoryById(widget.dream.categoryId!)?.emoji ??
+                              widget.dream.category.emoji)
+                          : widget.dream.category.emoji;
+                      
+                      final categoryName = widget.dream.categoryId != null
+                          ? (categoryProvider.getCategoryById(widget.dream.categoryId!)?.title ??
+                              widget.dream.category.displayName)
+                          : widget.dream.category.displayName;
+                      
+                      return Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          categoryColor.withValues(alpha: 0.9),
+                          categoryColor,
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
                       ),
-                      child: Text(
-                        widget.dream.title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          height: 1.3,
-                        ),
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(32),
+                        bottomRight: Radius.circular(32),
                       ),
                     ),
-                    const SizedBox(height: 24),
-                    // First step section
-                    if (widget.dream.firstStep != null) ...[
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.amber.shade50,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: Colors.amber.shade200,
-                            width: 1,
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const Text(
-                                  '🚀',
-                                  style: TextStyle(fontSize: 18),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 100, 24, 32),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Category badge with icon
+                          Row(
+                            children: [
+                              Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.3),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  'START WITH THIS',
-                                  style: TextStyle(
-                                    color: AppTheme.textPrimary,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 1.2,
+                                child: Center(
+                                  child: Text(
+                                    categoryEmoji,
+                                    style: const TextStyle(fontSize: 24),
                                   ),
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              widget.dream.firstStep!,
-                              style: const TextStyle(
-                                color: AppTheme.textPrimary,
-                                fontSize: 16,
-                                height: 1.4,
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                    ],
-                    // Notes section
-                    if (widget.dream.notes != null && widget.dream.notes!.isNotEmpty) ...[
-                      const Text(
-                        'NOTES',
-                        style: TextStyle(
-                          color: AppTheme.textPrimary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Text(
-                          widget.dream.notes!,
-                          style: const TextStyle(
-                            color: AppTheme.textPrimary,
-                            fontSize: 15,
-                            height: 1.5,
+                              const SizedBox(width: 12),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.3),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  categoryName,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-            // Bottom buttons
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Mark as Done button
-                  MouseRegion(
-                    onEnter: (_) => setState(() => _isMarkDoneHovered = true),
-                    onExit: (_) => setState(() => _isMarkDoneHovered = false),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: double.infinity,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: _isMarkDoneHovered
-                            ? Colors.green.shade600
-                            : Colors.green.shade500,
-                        borderRadius: BorderRadius.circular(28),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.green.withValues(alpha: 0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+                          const SizedBox(height: 24),
+                          // Title
+                          Text(
+                            widget.dream.title,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              height: 1.3,
+                            ),
                           ),
                         ],
                       ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: _markAsDone,
-                          borderRadius: BorderRadius.circular(28),
-                          child: const Center(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.check, color: Colors.white, size: 24),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Mark as Done',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
                     ),
+                  );
+                    },
                   ),
-                  const SizedBox(height: 12),
-                  // Back to Shuffle button
-                  MouseRegion(
-                    onEnter: (_) => setState(() => _isBackToShuffleHovered = true),
-                    onExit: (_) => setState(() => _isBackToShuffleHovered = false),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: double.infinity,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: _isBackToShuffleHovered
-                            ? Colors.grey.shade300
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(28),
-                      ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: _backToShuffle,
-                          borderRadius: BorderRadius.circular(28),
-                          child: Center(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.replay,
-                                  color: _isBackToShuffleHovered
-                                      ? AppTheme.textPrimary
-                                      : AppTheme.textSecondary,
-                                  size: 24,
+                  // Content section
+                  Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (!hasAnyOptionalContent) ...[
+                          // Empty state message
+                          const SizedBox(height: 16),
+                          Center(
+                            child: Text(
+                              'Ready to make this dream a reality?',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: AppTheme.textSecondary.withValues(
+                                  alpha: 0.8,
                                 ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Back to Shuffle',
-                                  style: TextStyle(
-                                    color: _isBackToShuffleHovered
-                                        ? AppTheme.textPrimary
-                                        : AppTheme.textSecondary,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
+                                fontSize: 16,
+                                fontStyle: FontStyle.italic,
+                                height: 1.5,
+                              ),
                             ),
                           ),
-                        ),
-                      ),
+                          const SizedBox(height: 16),
+                        ] else ...[
+                          // First step section (if exists)
+                          if (hasFirstStep) ...[
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: Colors.amber.shade50,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: Colors.amber.shade200,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Row(
+                                    children: [
+                                      Text(
+                                        '🚀',
+                                        style: TextStyle(fontSize: 18),
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'START WITH THIS',
+                                        style: TextStyle(
+                                          color: AppTheme.textPrimary,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 1.2,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    widget.dream.firstStep!,
+                                    style: const TextStyle(
+                                      color: AppTheme.textPrimary,
+                                      fontSize: 16,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (hasNotes) const SizedBox(height: 16),
+                          ],
+                          // Notes section (if exists)
+                          if (hasNotes) ...[
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: Colors.grey.shade300,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Row(
+                                    children: [
+                                      Text(
+                                        '📝',
+                                        style: TextStyle(fontSize: 18),
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'NOTES',
+                                        style: TextStyle(
+                                          color: AppTheme.textPrimary,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 1.2,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    widget.dream.notes!,
+                                    style: const TextStyle(
+                                      color: AppTheme.textPrimary,
+                                      fontSize: 16,
+                                      height: 1.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+          // Bottom buttons
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Mark as Done button
+                MouseRegion(
+                  onEnter: (_) => setState(() => _isMarkDoneHovered = true),
+                  onExit: (_) => setState(() => _isMarkDoneHovered = false),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: double.infinity,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: _isMarkDoneHovered
+                          ? Colors.green.shade600
+                          : Colors.green.shade500,
+                      borderRadius: BorderRadius.circular(28),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.green.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _markAsDone,
+                        borderRadius: BorderRadius.circular(28),
+                        child: const Center(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.check, color: Colors.white, size: 24),
+                              SizedBox(width: 8),
+                              Text(
+                                'Mark as Done',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Back to Shuffle button
+                MouseRegion(
+                  onEnter: (_) =>
+                      setState(() => _isBackToShuffleHovered = true),
+                  onExit: (_) =>
+                      setState(() => _isBackToShuffleHovered = false),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: double.infinity,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: _isBackToShuffleHovered
+                          ? Colors.grey.shade200
+                          : Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(
+                        color: _isBackToShuffleHovered
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade300,
+                        width: 2,
+                      ),
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _backToShuffle,
+                        borderRadius: BorderRadius.circular(28),
+                        child: Center(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.replay,
+                                color: _isBackToShuffleHovered
+                                    ? AppTheme.textPrimary
+                                    : AppTheme.textSecondary,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Back to Shuffle',
+                                style: TextStyle(
+                                  color: _isBackToShuffleHovered
+                                      ? AppTheme.textPrimary
+                                      : AppTheme.textSecondary,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'models/dream.dart';
+import 'models/category.dart';
 import 'providers/dream_provider.dart';
+import 'providers/category_provider.dart';
 import 'screens/home_screen.dart';
 import 'theme/app_theme.dart';
 
@@ -14,6 +16,7 @@ void main() async {
   
   // Register Hive adapters
   Hive.registerAdapter(DreamAdapter());
+  Hive.registerAdapter(DreamCategoryModelAdapter());
   
   runApp(const DreamDeckApp());
 }
@@ -23,8 +26,15 @@ class DreamDeckApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => DreamProvider()..init(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (context) => DreamProvider()..init(),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => CategoryProvider()..initialize(),
+        ),
+      ],
       child: MaterialApp(
         title: 'DreamDeck',
         debugShowCheckedModeBanner: false,

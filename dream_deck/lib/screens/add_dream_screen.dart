@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../providers/dream_provider.dart';
+import '../providers/category_provider.dart';
 import '../models/dream.dart';
 import '../models/dream_category.dart';
 import '../theme/app_theme.dart';
 import 'idea_created_screen.dart';
+import 'add_category_screen.dart';
 
 class AddDreamScreen extends StatefulWidget {
   const AddDreamScreen({super.key});
@@ -20,6 +22,7 @@ class _AddDreamScreenState extends State<AddDreamScreen> {
   final _notesController = TextEditingController();
   final _firstStepController = TextEditingController();
   DreamCategory _selectedCategory = DreamCategory.quickWin;
+  String? _selectedCategoryId; // For custom categories
   bool _isButtonEnabled = false;
 
   @override
@@ -55,6 +58,7 @@ class _AddDreamScreenState extends State<AddDreamScreen> {
             ? null
             : _firstStepController.text.trim(),
         categoryIndex: _selectedCategory.index,
+        categoryId: _selectedCategoryId,
         createdAt: DateTime.now(),
       );
 
@@ -93,10 +97,10 @@ class _AddDreamScreenState extends State<AddDreamScreen> {
             cursor: SystemMouseCursors.click,
             child: Material(
               color: Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(20),
               child: InkWell(
                 onTap: () => Navigator.pop(context),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(20),
                 hoverColor: Colors.grey.shade400,
                 child: const Center(
                   child: Icon(Icons.arrow_back, size: 24),
@@ -204,66 +208,148 @@ class _AddDreamScreenState extends State<AddDreamScreen> {
                 const SizedBox(height: 24),
 
                 // Category selection
-                const Text(
-                  'Category',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: DreamCategory.values.map((category) {
-                    final isSelected = _selectedCategory == category;
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedCategory = category;
-                        });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? category.color
-                              : category.color.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: isSelected
-                                ? category.color
-                                : category.color.withValues(alpha: 0.3),
-                            width: 2,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Category',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AddCategoryScreen(),
                           ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              category.emoji,
-                              style: const TextStyle(fontSize: 18),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              category.displayName,
-                              style: TextStyle(
-                                color: isSelected
-                                    ? Colors.white
-                                    : category.color,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
+                        );
+                        setState(() {}); // Refresh to show new category
+                      },
+                      icon: const Icon(Icons.add, size: 16),
+                      label: const Text('New'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppTheme.primaryPurple,
+                        textStyle: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Consumer<CategoryProvider>(
+                  builder: (context, categoryProvider, child) {
+                    return Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        // Default categories
+                        ...DreamCategory.values.map((category) {
+                          final isSelected = _selectedCategoryId == null && _selectedCategory == category;
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedCategory = category;
+                                _selectedCategoryId = null;
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? category.color
+                                    : category.color.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? category.color
+                                      : category.color.withValues(alpha: 0.3),
+                                  width: 2,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    category.emoji,
+                                    style: const TextStyle(fontSize: 18),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    category.displayName,
+                                    style: TextStyle(
+                                      color: isSelected
+                                          ? Colors.white
+                                          : category.color,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }),
+                        // Custom categories
+                        ...categoryProvider.customCategories.map((category) {
+                          final isSelected = _selectedCategoryId == category.id;
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedCategoryId = category.id;
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? category.color
+                                    : category.color.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? category.color
+                                      : category.color.withValues(alpha: 0.3),
+                                  width: 2,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    category.emoji,
+                                    style: const TextStyle(fontSize: 18),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    category.title,
+                                    style: TextStyle(
+                                      color: isSelected
+                                          ? Colors.white
+                                          : category.color,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }),
+                      ],
                     );
-                  }).toList(),
+                  },
                 ),
                 const SizedBox(height: 32),
 

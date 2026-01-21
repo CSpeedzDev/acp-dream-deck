@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/dream_provider.dart';
+import '../providers/category_provider.dart';
 import '../models/dream.dart';
 import '../theme/app_theme.dart';
+import 'action_feedback_screen.dart';
 
 class MemoriesScreen extends StatelessWidget {
   const MemoriesScreen({super.key});
@@ -11,32 +13,41 @@ class MemoriesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+        title: Consumer<DreamProvider>(
+          builder: (context, provider, child) {
+            final hasMemories = provider.completedDreams.isNotEmpty;
+            return Column(
               children: [
-                Icon(Icons.favorite, color: AppTheme.primaryPink, size: 28),
-                SizedBox(width: 8),
-                Text(
-                  'Memories',
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      hasMemories ? Icons.favorite : Icons.favorite_border,
+                      color: AppTheme.primaryPink,
+                      size: 28,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Memories',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primaryPink,
+                      ),
+                    ),
+                  ],
+                ),
+                const Text(
+                  'Dreams you\'ve made real ✨',
                   style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.primaryPink,
+                    fontSize: 14,
+                    fontWeight: FontWeight.normal,
+                    color: AppTheme.textSecondary,
                   ),
                 ),
               ],
-            ),
-            Text(
-              'Dreams you\'ve made real ✨',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.normal,
-                color: AppTheme.textSecondary,
-              ),
-            ),
-          ],
+            );
+          },
         ),
       ),
       body: Consumer<DreamProvider>(
@@ -71,32 +82,32 @@ class MemoriesScreen extends StatelessWidget {
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                color: AppTheme.primaryPink.withValues(alpha: 0.1),
+                color: Colors.grey.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.favorite_border,
                 size: 60,
-                color: AppTheme.primaryPink,
+                color: Colors.grey.shade400,
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'No memories yet',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 18,
+                color: AppTheme.textSecondary,
+                height: 1.5,
               ),
             ),
-            const SizedBox(height: 12),
-            const Text(
+            const SizedBox(height: 16),
+            Text(
               'Start shuffling and mark dreams\nas done to see them here!',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 16,
-                color: AppTheme.textSecondary,
-                height: 1.5,
+                fontSize: 14,
+                color: AppTheme.textSecondary.withValues(alpha: 0.8),
               ),
             ),
           ],
@@ -106,7 +117,24 @@ class MemoriesScreen extends StatelessWidget {
   }
 
   Widget _buildMemoryCard(BuildContext context, Dream dream, DreamProvider provider) {
-    return Card(
+    return Consumer<CategoryProvider>(
+      builder: (context, categoryProvider, child) {
+        final categoryColor = dream.categoryId != null
+            ? (categoryProvider.getCategoryById(dream.categoryId!)?.color ??
+                dream.category.color)
+            : dream.category.color;
+        
+        final categoryEmoji = dream.categoryId != null
+            ? (categoryProvider.getCategoryById(dream.categoryId!)?.emoji ??
+                dream.category.emoji)
+            : dream.category.emoji;
+        
+        final categoryName = dream.categoryId != null
+            ? (categoryProvider.getCategoryById(dream.categoryId!)?.title ??
+                dream.category.displayName)
+            : dream.category.displayName;
+        
+        return Card(
       margin: const EdgeInsets.only(bottom: 16),
       child: Container(
         decoration: BoxDecoration(
@@ -115,8 +143,8 @@ class MemoriesScreen extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              dream.category.color.withValues(alpha: 0.2),
-              dream.category.color.withValues(alpha: 0.1),
+              categoryColor.withValues(alpha: 0.2),
+              categoryColor.withValues(alpha: 0.1),
             ],
           ),
         ),
@@ -129,12 +157,12 @@ class MemoriesScreen extends StatelessWidget {
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                  color: dream.category.color.withValues(alpha: 0.3),
+                  color: categoryColor.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
                   child: Text(
-                    dream.category.emoji,
+                    categoryEmoji,
                     style: const TextStyle(fontSize: 28),
                   ),
                 ),
@@ -155,10 +183,10 @@ class MemoriesScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      dream.category.displayName,
+                      categoryName,
                       style: TextStyle(
                         fontSize: 14,
-                        color: dream.category.color,
+                        color: categoryColor,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -177,6 +205,8 @@ class MemoriesScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+      },
     );
   }
 
@@ -198,11 +228,17 @@ class MemoriesScreen extends StatelessWidget {
               dream.markAsActive();
               provider.updateDream(dream);
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Dream is active again! 🎉'),
-                  duration: Duration(seconds: 2),
-                  behavior: SnackBarBehavior.floating,
+              
+              // Show animated feedback
+              Navigator.push(
+                context,
+                PageRouteBuilder(
+                  pageBuilder: (context, animation, secondaryAnimation) =>
+                      ActionFeedbackScreen(actionType: ActionType.reactivated),
+                  opaque: false,
+                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                    return FadeTransition(opacity: animation, child: child);
+                  },
                 ),
               );
             },
