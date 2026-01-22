@@ -108,6 +108,7 @@ class MemoriesScreen extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 color: AppTheme.textSecondary.withValues(alpha: 0.8),
+                height: 1.5,
               ),
             ),
           ],

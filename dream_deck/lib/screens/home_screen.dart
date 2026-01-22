@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
+import '../providers/dream_provider.dart';
 import 'shuffle_screen.dart';
 import 'memories_screen.dart';
 import 'manifest_screen.dart';
@@ -42,9 +44,14 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              // Moon button (Not Today) - Lower left - only on shuffle/memories
+              // Moon button (Not Today) - Lower left - only on shuffle/memories and only if there are snoozed dreams
               if (_currentIndex != 1)
-                Padding(
+                Consumer<DreamProvider>(
+                  builder: (context, dreamProvider, child) {
+                    final hasSnoozedDreams =
+                        dreamProvider.allDreams.any((d) => d.isSnoozed);
+                    if (!hasSnoozedDreams) return const SizedBox.shrink();
+                    return Padding(
                   padding: const EdgeInsets.only(left: 16),
                   child: Container(
               width: 56,
@@ -72,9 +79,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-          ),
-          // Add button - Lower right
-          Padding(
+          );
+                  },
+                ),
+          // Add button - Lower right - only on shuffle/memories
+          if (_currentIndex != 1)
+            Padding(
             padding: const EdgeInsets.only(right: 16),
             child: Container(
               width: 64,

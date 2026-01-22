@@ -39,16 +39,12 @@ class _DreamDetailScreenState extends State<DreamDetailScreen> {
       return;
     }
     
-    // Create a basic manifest with default checklist
+    // Create a manifest without goals - goals will be added via "Start Tracking"
     final manifest = ManifestItem(
       id: const Uuid().v4(),
       dreamId: widget.dream.id,
       title: widget.dream.title,
-      checklist: [
-        ChecklistItem(title: widget.dream.firstStep ?? 'Take the first step'),
-        ChecklistItem(title: 'Make progress'),
-        ChecklistItem(title: 'Complete the dream'),
-      ],
+      checklist: [],
       goalValues: {},
       startedAt: DateTime.now(),
     );

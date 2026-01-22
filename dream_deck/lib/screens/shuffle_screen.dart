@@ -139,16 +139,12 @@ class _ShuffleScreenState extends State<ShuffleScreen> with SingleTickerProvider
       return;
     }
     
-    // Create a basic manifest with default checklist
+    // Create a manifest without goals - goals will be added via "Start Tracking"
     final manifest = ManifestItem(
       id: const Uuid().v4(),
       dreamId: dream.id,
       title: dream.title,
-      checklist: [
-        ChecklistItem(title: dream.firstStep ?? 'Take the first step'),
-        ChecklistItem(title: 'Make progress'),
-        ChecklistItem(title: 'Complete the dream'),
-      ],
+      checklist: [],
       goalValues: {},
       startedAt: DateTime.now(),
     );
@@ -368,7 +364,8 @@ class _ShuffleScreenState extends State<ShuffleScreen> with SingleTickerProvider
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 14,
-            color: AppTheme.textSecondary.withValues(alpha: 0.7),
+            color: AppTheme.textSecondary.withValues(alpha: 0.8),
+            height: 1.5,
           ),
         ),
       ],

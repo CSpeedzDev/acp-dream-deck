@@ -6,6 +6,7 @@ enum ActionType {
   snoozed,
   reactivated,
   manifested,
+  deleted,
 }
 
 class ActionFeedbackScreen extends StatefulWidget {
@@ -34,6 +35,8 @@ class _ActionFeedbackScreenState extends State<ActionFeedbackScreen>
         return 'Dream Reactivated!';
       case ActionType.manifested:
         return 'Manifesting!';
+      case ActionType.deleted:
+        return 'Manifest Deleted!';
     }
   }
 
@@ -47,6 +50,8 @@ class _ActionFeedbackScreenState extends State<ActionFeedbackScreen>
         return '🔄';
       case ActionType.manifested:
         return '✨';
+      case ActionType.deleted:
+        return '🗑️';
     }
   }
 
@@ -57,8 +62,12 @@ class _ActionFeedbackScreenState extends State<ActionFeedbackScreen>
       case ActionType.snoozed:
         return Icons.access_time;
       case ActionType.reactivated:
-        return Icons.replay;      case ActionType.manifested:
-        return Icons.playlist_add_check;    }
+        return Icons.replay;
+      case ActionType.manifested:
+        return Icons.playlist_add_check;
+      case ActionType.deleted:
+        return Icons.delete_outline;
+    }
   }
 
   Color get _color {
@@ -71,6 +80,8 @@ class _ActionFeedbackScreenState extends State<ActionFeedbackScreen>
         return AppTheme.primaryPurple;
       case ActionType.manifested:
         return AppTheme.primaryPurple;
+      case ActionType.deleted:
+        return Colors.red.shade500;
     }
   }
 
