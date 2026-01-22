@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import 'shuffle_screen.dart';
 import 'memories_screen.dart';
+import 'manifest_screen.dart';
+import 'not_today_screen.dart';
 import 'add_dream_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -14,9 +16,10 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = [
-    const ShuffleScreen(),
-    const MemoriesScreen(),
+  final _screens = const [
+    ShuffleScreen(),
+    ManifestScreen(),
+    MemoriesScreen(),
   ];
 
   void _showAddDreamScreen() {
@@ -32,38 +35,76 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _screens[_currentIndex],
-      floatingActionButton: Container(
-        width: 64,
-        height: 64,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [AppTheme.primaryPurple, AppTheme.primaryPink],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(32),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.primaryPurple.withValues(alpha: 0.4),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+      floatingActionButton: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        child: Row(
+            key: ValueKey('fab-row-$_currentIndex'),
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              // Moon button (Not Today) - Lower left - only on shuffle/memories
+              if (_currentIndex != 1)
+                Padding(
+                  padding: const EdgeInsets.only(left: 16),
+                  child: Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: Colors.indigo.shade900,
+                borderRadius: BorderRadius.circular(28),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const NotTodayScreen(),
+                      ),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(28),
+                  child: const Icon(
+                    Icons.nightlight_round,
+                    size: 28,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
             ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: _showAddDreamScreen,
-            borderRadius: BorderRadius.circular(32),
-            child: const Icon(
-              Icons.add,
-              size: 32,
-              color: Colors.white,
+          ),
+          // Add button - Lower right
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [AppTheme.primaryPurple, AppTheme.primaryPink],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(32),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _showAddDreamScreen,
+                  borderRadius: BorderRadius.circular(32),
+                  child: const Icon(
+                    Icons.add,
+                    size: 32,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
+        ],
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -77,22 +118,26 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Container(
-              height: 56,
+              height: 72,
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
                 color: Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(28),
+                borderRadius: BorderRadius.circular(36),
               ),
               child: Stack(
                 children: [
                   AnimatedAlign(
                     duration: const Duration(milliseconds: 300),
                     curve: Curves.easeInOut,
-                    alignment: _currentIndex == 0 ? Alignment.centerLeft : Alignment.centerRight,
+                    alignment: _currentIndex == 0
+                        ? Alignment.centerLeft
+                        : _currentIndex == 1
+                            ? Alignment.center
+                            : Alignment.centerRight,
                     child: FractionallySizedBox(
-                      widthFactor: 0.5,
+                      widthFactor: 1 / 3,
                       heightFactor: 1.0,
                       child: Container(
                         decoration: BoxDecoration(
@@ -101,7 +146,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: BorderRadius.circular(32),
                           boxShadow: [
                             BoxShadow(
                               color: AppTheme.primaryPurple.withValues(alpha: 0.3),
@@ -125,10 +170,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       Expanded(
                         child: _buildNavButton(
-                          icon: Icons.favorite,
-                          label: 'Memories',
+                          icon: Icons.playlist_add_check,
+                          label: 'Manifest',
                           isActive: _currentIndex == 1,
                           onTap: () => setState(() => _currentIndex = 1),
+                        ),
+                      ),
+                      Expanded(
+                        child: _buildNavButton(
+                          icon: Icons.favorite,
+                          label: 'Memories',
+                          isActive: _currentIndex == 2,
+                          onTap: () => setState(() => _currentIndex = 2),
                         ),
                       ),
                     ],
@@ -151,23 +204,23 @@ class _HomeScreenState extends State<HomeScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         color: Colors.transparent,
-        child: Row(
+        child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               icon,
-              color: isActive ? Colors.white : AppTheme.textPrimary,
-              size: 22,
+              color: isActive ? Colors.white : AppTheme.textSecondary,
+              size: 24,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
-                color: isActive ? Colors.white : AppTheme.textPrimary,
+                color: isActive ? Colors.white : AppTheme.textSecondary,
                 fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
-                fontSize: 15,
+                fontSize: 11,
               ),
             ),
           ],

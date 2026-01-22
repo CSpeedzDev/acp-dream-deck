@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:math' as math;
+import 'package:uuid/uuid.dart';
 import '../providers/dream_provider.dart';
+import '../providers/manifest_provider.dart';
 import '../models/dream.dart';
+import '../models/manifest_item.dart';
 import '../theme/app_theme.dart';
 import '../widgets/dream_card.dart';
 import 'action_feedback_screen.dart';
@@ -120,15 +123,44 @@ class _ShuffleScreenState extends State<ShuffleScreen> with SingleTickerProvider
   }
 
   void _onSwipeRight(Dream dream) {
-    dream.markAsCompleted();
-    Provider.of<DreamProvider>(context, listen: false).updateDream(dream);
+    // Check if manifest already exists
+    final manifestProvider = Provider.of<ManifestProvider>(context, listen: false);
+    final existingManifest = manifestProvider.getManifestByDreamId(dream.id);
+    
+    if (existingManifest != null) {
+      // Already has a manifest, just show feedback
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('This dream is already being tracked!'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      _shuffleDream();
+      return;
+    }
+    
+    // Create a basic manifest with default checklist
+    final manifest = ManifestItem(
+      id: const Uuid().v4(),
+      dreamId: dream.id,
+      title: dream.title,
+      checklist: [
+        ChecklistItem(title: dream.firstStep ?? 'Take the first step'),
+        ChecklistItem(title: 'Make progress'),
+        ChecklistItem(title: 'Complete the dream'),
+      ],
+      goalValues: {},
+      startedAt: DateTime.now(),
+    );
+    
+    manifestProvider.addManifest(manifest);
     
     // Show animated feedback
     Navigator.push(
       context,
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
-            ActionFeedbackScreen(actionType: ActionType.completed),
+            ActionFeedbackScreen(actionType: ActionType.manifested),
         opaque: false,
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
@@ -167,6 +199,13 @@ class _ShuffleScreenState extends State<ShuffleScreen> with SingleTickerProvider
               }
             });
           }
+        } else if (hasAnyDreams) {
+          // We had no dream but now there are dreams, load one
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              _loadRandomDream();
+            }
+          });
         }
 
         return Scaffold(

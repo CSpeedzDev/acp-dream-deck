@@ -28,6 +28,14 @@ class DreamProvider extends ChangeNotifier {
           .compareTo(a.completedAt ?? a.createdAt));
   }
 
+  List<Dream> get snoozedDreams {
+    return allDreams
+        .where((dream) => !dream.isCompleted && dream.isSnoozed)
+        .toList()
+      ..sort((a, b) => (b.snoozedUntil ?? b.createdAt)
+          .compareTo(a.snoozedUntil ?? a.createdAt));
+  }
+
   Dream? getRandomDream() {
     final active = activeDreams;
     if (active.isEmpty) return null;
