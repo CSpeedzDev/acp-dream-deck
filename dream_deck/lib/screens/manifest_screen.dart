@@ -388,7 +388,7 @@ Widget _buildManifestCard(BuildContext context, ManifestItem manifest) {
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<ManifestItem>(
-                  value: selectedManifest,
+                  initialValue: selectedManifest,
                   decoration: InputDecoration(
                     filled: true,
                     fillColor: Colors.grey.shade100,
