@@ -252,7 +252,13 @@ Widget _buildManifestCard(BuildContext context, ManifestItem manifest) {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: () => _showManifestDetail(context, manifest, dream),
+            onTap: () {
+              final manifestProvider = Provider.of<ManifestProvider>(
+                context,
+                listen: false,
+              );
+              _showManifestDetail(context, manifest, dream, manifestProvider);
+            },
             borderRadius: BorderRadius.circular(16),
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -640,8 +646,9 @@ class _StartTrackingDialogState extends State<_StartTrackingDialog> {
 
       Navigator.pop(context);
 
-      // Show snackbar after dialog is fully closed
+      // Show snackbar and refresh UI after dialog is fully closed
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        widget.manifestProvider.updateManifest(selectedManifest!);
         ScaffoldMessenger.of(widget.scaffoldContext).showSnackBar(
           const SnackBar(
             content: Text('Started tracking progress!'),
@@ -686,8 +693,9 @@ class _StartTrackingDialogState extends State<_StartTrackingDialog> {
 
       Navigator.pop(context);
 
-      // Show snackbar after dialog is fully closed
+      // Show snackbar and refresh UI after dialog is fully closed
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        widget.manifestProvider.updateManifest(selectedManifest!);
         ScaffoldMessenger.of(widget.scaffoldContext).showSnackBar(
           const SnackBar(
             content: Text('Started tracking progress!'),
@@ -703,23 +711,30 @@ void _showManifestDetail(
   BuildContext context,
   ManifestItem manifest,
   Dream? dream,
+  ManifestProvider manifestProvider,
 ) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (context) => ManifestDetailSheet(manifest: manifest, dream: dream),
+    builder: (context) => ManifestDetailSheet(
+      manifest: manifest,
+      dream: dream,
+      manifestProvider: manifestProvider,
+    ),
   );
 }
 
 class ManifestDetailSheet extends StatefulWidget {
   final ManifestItem manifest;
   final Dream? dream;
+  final ManifestProvider manifestProvider;
 
   const ManifestDetailSheet({
     super.key,
     required this.manifest,
     required this.dream,
+    required this.manifestProvider,
   });
 
   @override
@@ -1206,205 +1221,292 @@ class _ManifestDetailSheetState extends State<ManifestDetailSheet> {
   }
 
   void _showEditChecklistDialog(BuildContext context) {
-    final checklistControllers = widget.manifest.checklist
-        .map((item) => TextEditingController(text: item.title))
-        .toList();
-
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Edit Checklist'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ...List.generate(checklistControllers.length, (index) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: checklistControllers[index],
-                            decoration: InputDecoration(
-                              hintText: 'Task ${index + 1}',
-                              filled: true,
-                              fillColor: Colors.grey.shade100,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () {
-                            setDialogState(() {
-                              checklistControllers[index].dispose();
-                              checklistControllers.removeAt(index);
-                            });
-                          },
-                          icon: const Icon(Icons.remove_circle_outline),
-                          color: Colors.red,
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-                TextButton.icon(
-                  onPressed: () {
-                    setDialogState(() {
-                      checklistControllers.add(TextEditingController());
-                    });
-                  },
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add task'),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                for (var controller in checklistControllers) {
-                  controller.dispose();
-                }
-                Navigator.pop(context);
-              },
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final tasks = checklistControllers
-                    .map((c) => c.text.trim())
-                    .where((text) => text.isNotEmpty)
-                    .toList();
-
-                if (tasks.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Please add at least one task!'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                  return;
-                }
-
-                // Preserve completion status where possible
-                final newChecklist = <ChecklistItem>[];
-                for (int i = 0; i < tasks.length; i++) {
-                  if (i < widget.manifest.checklist.length) {
-                    // Update existing item
-                    widget.manifest.checklist[i].title = tasks[i];
-                    newChecklist.add(widget.manifest.checklist[i]);
-                  } else {
-                    // Add new item
-                    newChecklist.add(ChecklistItem(title: tasks[i]));
-                  }
-                }
-                widget.manifest.checklist = newChecklist;
-                widget.manifest.save();
-                
-                // Close dialog and clean up
-                for (var controller in checklistControllers) {
-                  controller.dispose();
-                }
-                Navigator.pop(context);
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        ),
+      builder: (context) => _EditChecklistDialog(
+        manifest: widget.manifest,
+        manifestProvider: widget.manifestProvider,
+        scaffoldContext: context,
       ),
     );
   }
 
   void _showEditNumericDialog(BuildContext context) {
-    final sheetContext = context; // Capture outer context
-    final currentController = TextEditingController(
-      text: widget.manifest.goalValues['current']?.toStringAsFixed(0) ?? '0',
-    );
-    final goalController = TextEditingController(
-      text: widget.manifest.goalValues['max']?.toStringAsFixed(0) ?? '0',
-    );
-
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Numeric Goal'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: currentController,
-              decoration: const InputDecoration(
-                labelText: 'Current value',
-              ),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: goalController,
-              decoration: const InputDecoration(
-                labelText: 'Goal value',
-              ),
-              keyboardType: TextInputType.number,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              currentController.dispose();
-              goalController.dispose();
-              Navigator.pop(context);
-            },
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final current = double.tryParse(currentController.text) ?? 0;
-              final goal = double.tryParse(goalController.text);
-
-              if (goal == null || goal <= 0) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Please enter a valid positive goal!'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-                return;
-              }
-
-              widget.manifest.goalValues = {
-                'current': current,
-                'max': goal,
-              };
-              widget.manifest.save();
-              
-              // Close dialog and clean up
-              currentController.dispose();
-              goalController.dispose();
-              Navigator.pop(context);
-              
-              // Show goal reached notification after dialog is closed
-              if (current >= goal && !widget.manifest.isCompleted) {
-                widget.manifest.markAsCompleted();
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  ScaffoldMessenger.of(sheetContext).showSnackBar(
-                    const SnackBar(
-                      content: Text('🎉 Goal reached!'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                });
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
+      builder: (context) => _EditNumericDialog(
+        manifest: widget.manifest,
+        manifestProvider: widget.manifestProvider,
+        scaffoldContext: context,
       ),
     );
   }
 }
+
+// Edit Checklist Dialog Widget
+class _EditChecklistDialog extends StatefulWidget {
+  final ManifestItem manifest;
+  final ManifestProvider manifestProvider;
+  final BuildContext scaffoldContext;
+
+  const _EditChecklistDialog({
+    required this.manifest,
+    required this.manifestProvider,
+    required this.scaffoldContext,
+  });
+
+  @override
+  State<_EditChecklistDialog> createState() => _EditChecklistDialogState();
+}
+
+class _EditChecklistDialogState extends State<_EditChecklistDialog> {
+  late List<TextEditingController> checklistControllers;
+
+  @override
+  void initState() {
+    super.initState();
+    checklistControllers = widget.manifest.checklist
+        .map((item) => TextEditingController(text: item.title))
+        .toList();
+  }
+
+  @override
+  void dispose() {
+    for (var controller in checklistControllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Edit Checklist'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ...List.generate(checklistControllers.length, (index) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: checklistControllers[index],
+                        decoration: InputDecoration(
+                          hintText: 'Task ${index + 1}',
+                          filled: true,
+                          fillColor: Colors.grey.shade100,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        setState(() {
+                          checklistControllers.removeAt(index);
+                        });
+                      },
+                      icon: const Icon(Icons.remove_circle_outline),
+                      color: Colors.red,
+                    ),
+                  ],
+                ),
+              );
+            }),
+            TextButton.icon(
+              onPressed: () {
+                setState(() {
+                  checklistControllers.add(TextEditingController());
+                });
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Add task'),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _handleSave,
+          child: const Text('Save'),
+        ),
+      ],
+    );
+  }
+
+  void _handleSave() {
+    final tasks = checklistControllers
+        .map((c) => c.text.trim())
+        .where((text) => text.isNotEmpty)
+        .toList();
+
+    if (tasks.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please add at least one task!'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    // Preserve completion status where possible
+    final newChecklist = <ChecklistItem>[];
+    for (int i = 0; i < tasks.length; i++) {
+      if (i < widget.manifest.checklist.length) {
+        // Update existing item
+        widget.manifest.checklist[i].title = tasks[i];
+        newChecklist.add(widget.manifest.checklist[i]);
+      } else {
+        // Add new item
+        newChecklist.add(ChecklistItem(title: tasks[i]));
+      }
+    }
+    widget.manifest.checklist = newChecklist;
+    widget.manifest.save();
+
+    Navigator.pop(context);
+
+    // Refresh UI after dialog is fully closed
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.manifestProvider.updateManifest(widget.manifest);
+      ScaffoldMessenger.of(widget.scaffoldContext).showSnackBar(
+        const SnackBar(
+          content: Text('Checklist updated!'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    });
+  }
+}
+
+// Edit Numeric Dialog Widget
+class _EditNumericDialog extends StatefulWidget {
+  final ManifestItem manifest;
+  final ManifestProvider manifestProvider;
+  final BuildContext scaffoldContext;
+
+  const _EditNumericDialog({
+    required this.manifest,
+    required this.manifestProvider,
+    required this.scaffoldContext,
+  });
+
+  @override
+  State<_EditNumericDialog> createState() => _EditNumericDialogState();
+}
+
+class _EditNumericDialogState extends State<_EditNumericDialog> {
+  late TextEditingController currentController;
+  late TextEditingController goalController;
+
+  @override
+  void initState() {
+    super.initState();
+    currentController = TextEditingController(
+      text: widget.manifest.goalValues['current']?.toStringAsFixed(0) ?? '0',
+    );
+    goalController = TextEditingController(
+      text: widget.manifest.goalValues['max']?.toStringAsFixed(0) ?? '0',
+    );
+  }
+
+  @override
+  void dispose() {
+    currentController.dispose();
+    goalController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Edit Numeric Goal'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: currentController,
+            decoration: const InputDecoration(
+              labelText: 'Current value',
+            ),
+            keyboardType: TextInputType.number,
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: goalController,
+            decoration: const InputDecoration(
+              labelText: 'Goal value',
+            ),
+            keyboardType: TextInputType.number,
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _handleSave,
+          child: const Text('Save'),
+        ),
+      ],
+    );
+  }
+
+  void _handleSave() {
+    final current = double.tryParse(currentController.text) ?? 0;
+    final goal = double.tryParse(goalController.text);
+
+    if (goal == null || goal <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a valid positive goal!'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    widget.manifest.goalValues = {
+      'current': current,
+      'max': goal,
+    };
+    widget.manifest.save();
+
+    Navigator.pop(context);
+
+    // Check if goal reached and refresh UI after dialog is fully closed
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.manifestProvider.updateManifest(widget.manifest);
+      
+      if (current >= goal && !widget.manifest.isCompleted) {
+        widget.manifest.markAsCompleted();
+        ScaffoldMessenger.of(widget.scaffoldContext).showSnackBar(
+          const SnackBar(
+            content: Text('🎉 Goal reached!'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(widget.scaffoldContext).showSnackBar(
+          const SnackBar(
+            content: Text('Goal updated!'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    });
+  }
+}
+
