@@ -1,0 +1,28 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "dream_deck",
+            "cwd": "dream_deck",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "dream_deck (profile mode)",
+            "cwd": "dream_deck",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "dream_deck (release mode)",
+            "cwd": "dream_deck",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
+        }
+    ]
+}

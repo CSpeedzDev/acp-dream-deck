@@ -261,6 +261,7 @@ class _DreamCardState extends State<DreamCard>
                 // First step section
                 if (widget.dream.firstStep != null) ...[
                   Container(
+                    width: double.infinity,
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.2),
@@ -316,7 +317,7 @@ class _DreamCardState extends State<DreamCard>
                         ),
                       ),
                     ),
-                    _buildSwipeHint('Let\'s do this! →', Colors.white.withValues(alpha: 0.7)),
+                    _buildSwipeHint('Manifest! →', Colors.white.withValues(alpha: 0.7)),
                   ],
                 ),
               ],

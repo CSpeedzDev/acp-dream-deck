@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
 import '../models/dream.dart';
-import '../providers/dream_provider.dart';
+import '../models/manifest_item.dart';
 import '../providers/category_provider.dart';
+import '../providers/dream_provider.dart';
+import '../providers/manifest_provider.dart';
 import '../theme/app_theme.dart';
 import 'action_feedback_screen.dart';
 
@@ -16,16 +19,39 @@ class DreamDetailScreen extends StatefulWidget {
 }
 
 class _DreamDetailScreenState extends State<DreamDetailScreen> {
-  bool _isMarkDoneHovered = false;
+  bool _isManifestHovered = false;
   bool _isBackToShuffleHovered = false;
   bool _isBackButtonHovered = false;
+  bool _isDeleteButtonHovered = false;
 
-  void _markAsDone() {
-    widget.dream.markAsCompleted();
-    Provider.of<DreamProvider>(
-      context,
-      listen: false,
-    ).updateDream(widget.dream);
+  void _manifestThis() {
+    // Check if manifest already exists
+    final manifestProvider = Provider.of<ManifestProvider>(context, listen: false);
+    final existingManifest = manifestProvider.getManifestByDreamId(widget.dream.id);
+    
+    if (existingManifest != null) {
+      // Already has a manifest, show message and go back
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('This dream is already being tracked!'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+    
+    // Create a manifest without goals - goals will be added via "Start Tracking"
+    final manifest = ManifestItem(
+      id: const Uuid().v4(),
+      dreamId: widget.dream.id,
+      title: widget.dream.title,
+      checklist: [],
+      goalValues: {},
+      startedAt: DateTime.now(),
+    );
+    
+    manifestProvider.addManifest(manifest);
     
     // Pop the detail screen first
     Navigator.pop(context);
@@ -35,7 +61,7 @@ class _DreamDetailScreenState extends State<DreamDetailScreen> {
       context,
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
-            ActionFeedbackScreen(actionType: ActionType.completed),
+            ActionFeedbackScreen(actionType: ActionType.manifested),
         opaque: false,
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
@@ -46,6 +72,30 @@ class _DreamDetailScreenState extends State<DreamDetailScreen> {
 
   void _backToShuffle() {
     Navigator.pop(context);
+  }
+
+  void _deleteDream() async {
+    final dreamProvider = Provider.of<DreamProvider>(context, listen: false);
+    
+    // Delete the dream from the database
+    await dreamProvider.deleteDream(widget.dream.id);
+    
+    // Pop the detail screen
+    Navigator.pop(context);
+    
+    // Show action feedback
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        opaque: false,
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            ActionFeedbackScreen(
+          actionType: ActionType.deletedIdea,
+        ),
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: const Duration(milliseconds: 300),
+      ),
+    );
   }
 
   @override
@@ -85,6 +135,36 @@ class _DreamDetailScreenState extends State<DreamDetailScreen> {
             ),
           ),
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              onEnter: (_) => setState(() => _isDeleteButtonHovered = true),
+              onExit: (_) => setState(() => _isDeleteButtonHovered = false),
+              child: Material(
+                color: Colors.white.withValues(
+                  alpha: _isDeleteButtonHovered ? 0.4 : 0.3,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                child: InkWell(
+                  onTap: _deleteDream,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    alignment: Alignment.center,
+                    child: const Icon(
+                      Icons.delete_outline,
+                      size: 24,
+                      color: Colors.red,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
@@ -322,40 +402,43 @@ class _DreamDetailScreenState extends State<DreamDetailScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Mark as Done button
+                // Manifest this! button
                 MouseRegion(
-                  onEnter: (_) => setState(() => _isMarkDoneHovered = true),
-                  onExit: (_) => setState(() => _isMarkDoneHovered = false),
+                  onEnter: (_) => setState(() => _isManifestHovered = true),
+                  onExit: (_) => setState(() => _isManifestHovered = false),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     width: double.infinity,
                     height: 56,
                     decoration: BoxDecoration(
-                      color: _isMarkDoneHovered
-                          ? Colors.green.shade600
-                          : Colors.green.shade500,
+                      gradient: LinearGradient(
+                        colors: _isManifestHovered
+                            ? [
+                                AppTheme.primaryPurple.withValues(alpha: 0.9),
+                                AppTheme.primaryPink.withValues(alpha: 0.9),
+                              ]
+                            : [
+                                AppTheme.primaryPurple,
+                                AppTheme.primaryPink,
+                              ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
                       borderRadius: BorderRadius.circular(28),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.green.withValues(alpha: 0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
                     ),
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        onTap: _markAsDone,
+                        onTap: _manifestThis,
                         borderRadius: BorderRadius.circular(28),
                         child: const Center(
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.check, color: Colors.white, size: 24),
+                              Icon(Icons.playlist_add_check, color: Colors.white, size: 24),
                               SizedBox(width: 8),
                               Text(
-                                'Mark as Done',
+                                'Manifest this!',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 16,

@@ -23,6 +23,8 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
     '✨', '🎯', '🚀', '💡', '🎨', '🎵', '🎮', '📱',
     '💻', '🏃', '🧘', '🍕', '🌮', '☕', '🌸', '🌈',
     '🔥', '💪', '🎉', '🌟', '⭐', '💎', '🏆', '🎁',
+    '✈️', '🚗', '📅', '🔧', '⚙️', '✏️', '💼', '📄',
+    '📚', '🗺️', '📍', '🌍', '🏔️', '🌳', '🎬', '📷',
   ];
 
   @override
@@ -216,6 +218,11 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
                 Colors.indigo,
                 Colors.amber,
                 Colors.cyan,
+                Colors.black,
+                Colors.grey,
+                Colors.brown,
+                Colors.lime,
+                Colors.deepOrange,
               ].map((color) {
                 final isSelected = _selectedColor?.value == color.value;
                 return GestureDetector(
