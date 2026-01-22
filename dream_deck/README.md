@@ -64,6 +64,50 @@ A minimalist mobile app that stores personal aspirations (bucket list items) and
 - Option to reactivate dreams
 - Empty state guidance
 
+### 🌟 Nice-to-Have Features (Beyond Core Stories)
+
+✅ **Manifest System - Progress Tracking**
+- Transform dreams into actionable manifests
+- Two tracking modes:
+  - **Checklist Mode**: Track progress with subtasks
+  - **Numeric Mode**: Track measurable goals with current/target values
+- Create manifests directly from dream detail view
+- Edit tracking goals after creation
+- View detailed progress with visual indicators
+- Delete manifests to move dreams back to shuffle pool
+- Beautiful progress cards with completion percentages
+
+✅ **Advanced Dream Management**
+- Delete dreams permanently from detail view
+- Contextual action feedback screens for all major actions
+- Animated feedback for: completing, snoozing, reactivating, manifesting, and deleting
+- Conditional UI elements (e.g., snooze button only appears when snoozed dreams exist)
+
+✅ **Enhanced UX & Polish**
+- Consistent empty state styling across all screens
+- Standardized fonts, sizes, and text alignment
+- Properly positioned floating action buttons
+- Overflow protection for long content
+- Smooth animations and transitions throughout
+
+✅ **Snoozed Dreams Management**
+- Dedicated "Not Today" screen for snoozed dreams
+- 24-hour cooldown system
+- Visual countdown until dreams become available again
+- Quick reactivation from snoozed view
+
+✅ **Custom Category System**
+- Create custom categories beyond the 5 defaults
+- Assign custom emoji and color to each category
+- Manage categories through dedicated settings
+- Persist custom categories across sessions
+
+✅ **Database Integration**
+- Full CRUD operations with Hive database
+- Persistent storage for dreams, manifests, and categories
+- Automatic data synchronization across screens
+- State management with Provider pattern
+
 ## 🎨 Design
 
 - **Color Scheme**: Purple/Pink gradient (matches design reference)
@@ -87,14 +131,22 @@ lib/
 ├── models/
 │   ├── dream.dart              # Dream model with Hive annotations
 │   ├── dream.g.dart            # Generated Hive adapter
-│   └── dream_category.dart     # Category enum with colors/emojis
+│   ├── dream_category.dart     # Category enum with colors/emojis
+│   ├── manifest_item.dart      # Manifest model for progress tracking
+│   └── manifest_item.g.dart    # Generated Hive adapter
 ├── providers/
-│   └── dream_provider.dart     # State management for dreams
+│   ├── dream_provider.dart     # State management for dreams
+│   ├── manifest_provider.dart  # State management for manifests
+│   └── category_provider.dart  # State management for categories
 ├── screens/
-│   ├── home_screen.dart        # Main navigation
+│   ├── home_screen.dart        # Main navigation with 3 tabs
 │   ├── shuffle_screen.dart     # Random dream display
 │   ├── memories_screen.dart    # Completed dreams list
-│   └── add_dream_screen.dart   # Capture new ideas
+│   ├── manifest_screen.dart    # Progress tracking for dreams
+│   ├── not_today_screen.dart   # Snoozed dreams management
+│   ├── add_dream_screen.dart   # Capture new ideas
+│   ├── dream_detail_screen.dart # Dream details with actions
+│   └── action_feedback_screen.dart # Animated action confirmations
 ├── widgets/
 │   └── dream_card.dart         # Swipeable dream card widget
 └── theme/
@@ -140,8 +192,11 @@ flutter run
    - Swipe left to snooze for 24 hours
    - Swipe right to mark as completed
    - Or use the detail view buttons
-5. **View Memories**: Check the Memories tab to see completed dreams
-6. **Reactivate**: Tap the replay icon to make a dream active again
+5. **Track Progress**: Create a manifest to track your dream with checklists or numeric goals
+6. **View Memories**: Check the Memories tab to see completed dreams
+7. **Manage Snoozed**: View and reactivate snoozed dreams in the moon menu
+8. **Reactivate**: Tap the replay icon to make a dream active again
+9. **Delete**: Remove dreams permanently or delete manifests to return dreams to shuffle
 
 ### 💾 Data Persistence
 
@@ -168,13 +223,28 @@ flutter run
 
 ## 🔮 Future Enhancements (Out of Scope for MVP)
 
-- Push notifications
-- Cloud sync
-- Social sharing
-- Analytics/insights
-- Search and filtering
-- Image attachments
-- Recurring dreams
+- Push notifications for snoozed dreams
+- Cloud sync across devices
+- Social sharing of achievements
+- Analytics/insights dashboard
+- Advanced search and filtering
+- Image attachments for dreams
+- Recurring dreams/habits
+- Export/import functionality
+- Collaboration features
+
+## 📊 Implementation Notes
+
+**Core User Stories**: ~27 hours (within initial scope)
+**Nice-to-Have Features**: Additional development time invested in:
+- Manifest tracking system (checklist + numeric modes)
+- Enhanced dream management (delete, edit goals)
+- Snoozed dreams screen
+- Custom category management
+- Action feedback animations
+- Comprehensive UX polish and consistency
+
+All features are production-ready with proper error handling, state management, and database persistence.
 
 ## 📄 License
 
