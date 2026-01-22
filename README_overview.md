@@ -33,3 +33,6 @@ Wir entwickeln für zwei primäre Archetypen:
 
 ## 📂 Dokumentation
 Detaillierte Anforderungen, App-Mockup, Steckbriefe der Personas und das Product Vision Board finden sich im [Project Wiki](https://github.com/CSpeedzDev/acp-dream-deck/wiki).
+
+## Technisch-Detaillierte Projektinformationen
+Genauere technische Aspekte können aus der [Flutter Projekt-Readme](https://github.com/CSpeedzDev/acp-dream-deck/blob/main/dream_deck/README.md) entnommen werden.
