@@ -7,6 +7,7 @@ enum ActionType {
   reactivated,
   manifested,
   deleted,
+  deletedIdea,
 }
 
 class ActionFeedbackScreen extends StatefulWidget {
@@ -37,6 +38,8 @@ class _ActionFeedbackScreenState extends State<ActionFeedbackScreen>
         return 'Manifesting!';
       case ActionType.deleted:
         return 'Manifest Deleted!';
+      case ActionType.deletedIdea:
+        return 'Idea Deleted!';
     }
   }
 
@@ -51,6 +54,8 @@ class _ActionFeedbackScreenState extends State<ActionFeedbackScreen>
       case ActionType.manifested:
         return '✨';
       case ActionType.deleted:
+        return '🗑️';
+      case ActionType.deletedIdea:
         return '🗑️';
     }
   }
@@ -67,6 +72,8 @@ class _ActionFeedbackScreenState extends State<ActionFeedbackScreen>
         return Icons.playlist_add_check;
       case ActionType.deleted:
         return Icons.delete_outline;
+      case ActionType.deletedIdea:
+        return Icons.delete_outline;
     }
   }
 
@@ -81,6 +88,8 @@ class _ActionFeedbackScreenState extends State<ActionFeedbackScreen>
       case ActionType.manifested:
         return AppTheme.primaryPurple;
       case ActionType.deleted:
+        return Colors.red.shade500;
+      case ActionType.deletedIdea:
         return Colors.red.shade500;
     }
   }

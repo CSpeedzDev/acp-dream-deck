@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../models/dream.dart';
 import '../models/manifest_item.dart';
 import '../providers/category_provider.dart';
+import '../providers/dream_provider.dart';
 import '../providers/manifest_provider.dart';
 import '../theme/app_theme.dart';
 import 'action_feedback_screen.dart';
@@ -21,6 +22,7 @@ class _DreamDetailScreenState extends State<DreamDetailScreen> {
   bool _isManifestHovered = false;
   bool _isBackToShuffleHovered = false;
   bool _isBackButtonHovered = false;
+  bool _isDeleteButtonHovered = false;
 
   void _manifestThis() {
     // Check if manifest already exists
@@ -72,6 +74,30 @@ class _DreamDetailScreenState extends State<DreamDetailScreen> {
     Navigator.pop(context);
   }
 
+  void _deleteDream() async {
+    final dreamProvider = Provider.of<DreamProvider>(context, listen: false);
+    
+    // Delete the dream from the database
+    await dreamProvider.deleteDream(widget.dream.id);
+    
+    // Pop the detail screen
+    Navigator.pop(context);
+    
+    // Show action feedback
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        opaque: false,
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            ActionFeedbackScreen(
+          actionType: ActionType.deletedIdea,
+        ),
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: const Duration(milliseconds: 300),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final hasFirstStep =
@@ -109,6 +135,36 @@ class _DreamDetailScreenState extends State<DreamDetailScreen> {
             ),
           ),
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              onEnter: (_) => setState(() => _isDeleteButtonHovered = true),
+              onExit: (_) => setState(() => _isDeleteButtonHovered = false),
+              child: Material(
+                color: Colors.white.withValues(
+                  alpha: _isDeleteButtonHovered ? 0.4 : 0.3,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                child: InkWell(
+                  onTap: _deleteDream,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    alignment: Alignment.center,
+                    child: const Icon(
+                      Icons.delete_outline,
+                      size: 24,
+                      color: Colors.red,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
