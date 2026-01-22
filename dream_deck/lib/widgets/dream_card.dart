@@ -297,7 +297,9 @@ class _DreamCardState extends State<DreamCard>
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildSwipeHint('← Not now', Colors.white.withValues(alpha: 0.7)),
+                    Flexible(
+                      child: _buildSwipeHint('← Not now', Colors.white.withValues(alpha: 0.7)),
+                    ),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
@@ -317,7 +319,10 @@ class _DreamCardState extends State<DreamCard>
                         ),
                       ),
                     ),
-                    _buildSwipeHint('Manifest! →', Colors.white.withValues(alpha: 0.7)),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: _buildSwipeHint('Manifest! →', Colors.white.withValues(alpha: 0.7)),
+                    ),
                   ],
                 ),
               ],
