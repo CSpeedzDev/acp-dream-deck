@@ -49,6 +49,5 @@ Genauere technische Aspekte können aus der [Flutter Projekt-Readme](https://git
 
 <br/>
 <hr/>
-
 > Entwickelt im Rahmen der Vorlesung **Agile Vorgehensmodelle und Mobile Kommunikation** im **1. Master-Semester** an der **HTWG Konstanz** von **Daniele Risorgi**
 
