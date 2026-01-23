@@ -1,4 +1,12 @@
 # DreamDeck 🃏✨
+<div align="middle">
+   <span>&nbsp;&nbsp;&nbsp;</span>
+   <img src="https://raw.githubusercontent.com/CSpeedzDev/acp-dream-deck/refs/heads/main/dream_deck/assets/shuffle_screen.png" alt="Shuffle" width="310"/>
+   <span>&nbsp;&nbsp;&nbsp;</span>
+   <span>&nbsp;&nbsp;&nbsp;</span>
+   <img src="https://raw.githubusercontent.com/CSpeedzDev/acp-dream-deck/refs/heads/main/dream_deck/assets/memories_screen.png" alt="Memories" width="310"/>
+   <span>&nbsp;&nbsp;&nbsp;</span>
+</div>
 > Don't manage your dreams. Shuffle them.
 
 **DreamDeck** ist eine minimalistische Mobile App, die persönliche Aspirationen (Bucket List Items) speichert und durch einen Zufallsalgorithmus ("Shuffle") wieder ins Gedächtnis ruft.
@@ -36,3 +44,9 @@ Detaillierte Anforderungen, App-Mockup, Steckbriefe der Personas und das Product
 
 ## Technisch-Detaillierte Projektinformationen
 Genauere technische Aspekte können aus der [Flutter Projekt-Readme](https://github.com/CSpeedzDev/acp-dream-deck/blob/main/dream_deck/README.md) entnommen werden.
+
+<br/>
+<hr/>
+
+> Entwickelt im Rahmen der Vorlesung **Agile Vorgehensmodelle und Mobile Kommunikation** im **1. Master-Semester** an der **HTWG Konstanz** von **Daniele Risorgi**
+
