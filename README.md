@@ -1,4 +1,5 @@
 # DreamDeck 🃏✨
+
 <div align="middle">
    <span>&nbsp;&nbsp;&nbsp;</span>
    <img src="https://raw.githubusercontent.com/CSpeedzDev/acp-dream-deck/refs/heads/main/dream_deck/assets/shuffle_screen.png" alt="Shuffle" width="310"/>
@@ -7,6 +8,7 @@
    <img src="https://raw.githubusercontent.com/CSpeedzDev/acp-dream-deck/refs/heads/main/dream_deck/assets/memories_screen.png" alt="Memories" width="310"/>
    <span>&nbsp;&nbsp;&nbsp;</span>
 </div>
+
 > Don't manage your dreams. Shuffle them.
 
 **DreamDeck** ist eine minimalistische Mobile App, die persönliche Aspirationen (Bucket List Items) speichert und durch einen Zufallsalgorithmus ("Shuffle") wieder ins Gedächtnis ruft.
